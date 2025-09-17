@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
-import time
 
 # Konfiguracja strony
 st.set_page_config(
@@ -27,14 +26,7 @@ st.markdown("""
         margin: 0.2rem 0;
         font-size: 12px;
         padding: 0.2rem 0.5rem;
-    }
-    .diamond-stock {
-        background: linear-gradient(45deg, #ffd700, #ffed4e);
-        border-left: 3px solid #f59e0b;
-    }
-    .brown-stock {
-        background: linear-gradient(45deg, #d97706, #f59e0b);
-        border-left: 3px solid #92400e;
+        height: 50px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -66,9 +58,10 @@ def calculate_ema(series, period=200):
 def get_all_nasdaq_symbols():
     """Rozszerzona lista symboli NASDAQ"""
     return [
-        # Tech Giants
+        # Tech Giants & Popular
         'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'ORCL',
         'IBM', 'CSCO', 'ADBE', 'CRM', 'NOW', 'SNOW', 'ZM', 'TEAM', 'OKTA', 'DDOG',
+        'QCOM', 'TXN', 'AVGO', 'AMAT', 'LRCX', 'KLAC', 'MU', 'MCHP', 'ADI', 'MRVL',
         
         # Finance
         'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'SCHW', 'AXP', 'V', 'MA', 'PYPL',
@@ -76,7 +69,7 @@ def get_all_nasdaq_symbols():
         
         # Healthcare
         'JNJ', 'PFE', 'MRK', 'ABBV', 'LLY', 'ABT', 'MDT', 'BMY', 'UNH',
-        'GILD', 'AMGN', 'BIIB', 'REGN', 'VRTX', 'MRNA', 'BNTX', 'VRTX', 'ILMN',
+        'GILD', 'AMGN', 'BIIB', 'REGN', 'VRTX', 'MRNA', 'BNTX',
         
         # Consumer
         'WMT', 'KO', 'PEP', 'PG', 'NKE', 'MCD', 'SBUX', 'COST', 'TGT', 'HD',
@@ -84,34 +77,23 @@ def get_all_nasdaq_symbols():
         
         # Energy
         'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY', 'MPC', 'PSX', 'VLO',
-        'ENB', 'TRP', 'EPD', 'KMB', 'CL', 'CLX', 'SYY', 'KHC',
         
         # Industrial
         'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX',
-        'F', 'GM', 'RIVN', 'LCID', 'NIO', 'LI', 'XPEV',
+        'F', 'GM', 'RIVN', 'LCID',
         
-        # Semiconductors
-        'QCOM', 'TXN', 'AVGO', 'AMAT', 'LRCX', 'KLAC', 'MU', 'MCHP', 'ADI', 'MRVL',
-        'NXPI', 'ON', 'STM', 'INFY', 'ASML', 'TSM', 'INTC', 'NVDA',
-        
-        # Software
+        # Software & Communication
         'INTU', 'ADP', 'WDAY', 'VEEV', 'TWLO', 'DOCU', 'PLTR', 'U', 'RBLX',
         'UBER', 'LYFT', 'DASH', 'ABNB', 'ZS', 'CRWD', 'PANW', 'FTNT',
-        
-        # Communication
-        'CCI', 'AMT', 'VZ', 'T', 'SPOT', 'PINS', 'SNAP', 'TWTR',
+        'CCI', 'AMT', 'VZ', 'T', 'SPOT', 'PINS', 'SNAP',
         
         # More stocks for better coverage
-        'DE', 'CAT', 'RTX', 'NOC', 'GD', 'LMT', 'BA', 'HON', 'MMM', 'GE',
-        'UNP', 'CSX', 'NSC', 'KSU', 'CNI', 'ODFL', 'EXPD', 'FDX', 'UPS',
-        'AMZN', 'GOOGL', 'META', 'MSFT', 'AAPL', 'TSLA', 'NVDA', 'AMD',
-        'JNJ', 'PFE', 'MRK', 'ABBV', 'LLY', 'UNH', 'ABT', 'MDT',
-        'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'AXP', 'BLK', 'SCHW',
-        'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY', 'MPC',
-        'WMT', 'COST', 'TGT', 'HD', 'LOW', 'BBY', 'DG', 'DLTR',
-        'DIS', 'CMCSA', 'NFLX', 'ROKU', 'CHTR', 'TMUS', 'VZ', 'T',
-        'V', 'MA', 'PYPL', 'SQ', 'AFRM', 'COIN', 'AXP', 'DFS',
-        'PG', 'KO', 'PEP', 'CL', 'KMB', 'CLX', 'SYY', 'KHC'
+        'DE', 'RTX', 'NOC', 'GD', 'CSX', 'NSC', 'ODFL', 'EXPD',
+        'LOW', 'BBY', 'DG', 'DLTR', 'CHTR', 'ROKU', 'TTD', 'SQ',
+        'NVST', 'STNE', 'BILL', 'TTD', 'ZEN', 'NET', 'ESTC',
+        'DDOG', 'MDB', 'SNOW', 'CRWD', 'ZS', 'PANW', 'FTNT',
+        'VEEV', 'TWLO', 'OKTA', 'DOCU', 'TEAM', 'NOW', 'SNPS',
+        'CDNS', 'ANSS', 'MSCI', 'MTCH', 'BIDU', 'JD', 'NTES'
     ]
 
 @st.cache_data(ttl=300)
@@ -150,7 +132,7 @@ def get_top_symbols_by_volume(symbol_list, top_n=500):
 
 @st.cache_data(ttl=300)
 def analyze_single_stock(symbol, rsi_threshold_max=40):
-    """Analizuje pojedynczą spółkę"""
+    """Analizuje pojedynczą spółkę - poprawiona wersja"""
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period="1y", interval="1d")
@@ -165,7 +147,7 @@ def analyze_single_stock(symbol, rsi_threshold_max=40):
         
         latest = df.iloc[-1]
         
-        # Sprawdź czy RSI jest w interesującym zakresie
+        # Sprawdź czy RSI jest w interesującym zakresie (25-40)
         if pd.isna(latest['rsi']) or latest['rsi'] > rsi_threshold_max or latest['rsi'] < 25:
             return None
             
@@ -215,12 +197,18 @@ def find_diamond_stocks(rsi_max=40, min_market_cap=0, max_market_cap=float('inf'
     top_symbols = get_top_symbols_by_volume(all_symbols, 500)
     
     results = []
+    processed_symbols = set()  # Unikaj duplikatów
     
     progress_bar = st.progress(0)
     status_text = st.empty()
     
     for i, symbol in enumerate(top_symbols):
         try:
+            # Unikaj duplikatów
+            if symbol in processed_symbols:
+                continue
+            processed_symbols.add(symbol)
+            
             status_text.text(f"🔍 Analizuję {symbol}... ({i+1}/{len(top_symbols)})")
             progress = (i + 1) / len(top_symbols)
             progress_bar.progress(progress)
@@ -342,7 +330,7 @@ with st.sidebar:
             )
             
             # Filtruj po sektorze
-            if selected_sector != "Wszystkie":
+            if selected_sector != "Wszystkie" and diamond_stocks:
                 diamond_stocks = [s for s in diamond_stocks if s['sector'] == selected_sector]
             
             if diamond_stocks:
@@ -376,27 +364,69 @@ if 'diamond_stocks' in st.session_state:
     
     table_data = []
     for s in display_stocks:
+        # Formatowanie kapitalizacji
+        if s['market_cap'] > 0:
+            if s['market_cap'] >= 1e12:
+                market_cap_str = f"${s['market_cap']/1e12:.1f}T"
+            elif s['market_cap'] >= 1e9:
+                market_cap_str = f"${s['market_cap']/1e9:.1f}B"
+            elif s['market_cap'] >= 1e6:
+                market_cap_str = f"${s['market_cap']/1e6:.1f}M"
+            else:
+                market_cap_str = f"${s['market_cap']:,.0f}"
+        else:
+            market_cap_str = "N/A"
+        
+        # Opis wolumenu
+        if s['volume_ratio'] > 2.0:
+            vol_desc = "🔥 Bardzo wysoki"
+        elif s['volume_ratio'] > 1.5:
+            vol_desc = "📈 Wysoki"
+        elif s['volume_ratio'] > 1.0:
+            vol_desc = "📊 Normalny"
+        elif s['volume_ratio'] > 0.5:
+            vol_desc = "📉 Niski"
+        else:
+            vol_desc = "❄️ Bardzo niski"
+        
         table_data.append({
             'Symbol': f"{s['icon']} {s['symbol']}",
             'Cena': f"${s['price']}",
             'RSI': f"{s['rsi']}",
             'EMA200': f"${s['ema_200']}",
-            'Sektor': s['sector'][:20] if len(s['sector']) > 20 else s['sector'],
-            'Kapitalizacja': f"${s['market_cap']/1e9:.1f}B" if s['market_cap'] > 0 else "N/A"
+            'Kapitalizacja': market_cap_str,
+            'Vol ratio': f"{s['volume_ratio']}x ({vol_desc})"
         })
     
     df_display = pd.DataFrame(table_data)
     st.dataframe(df_display, use_container_width=True, height=400)
     
-    # Przyciski spółek
+    # Przyciski spółek (unikaj duplikatów)
     st.subheader("💎 Kliknij spółkę do analizy")
-    cols = st.columns(6)
-    for i, stock in enumerate(display_stocks):
-        col = cols[i % 6]
-        button_key = f"btn_{stock['symbol']}_{i}"
-        if col.button(f"{stock['icon']} {stock['symbol']}\nRSI: {stock['rsi']}", key=button_key, help=f"Analiza {stock['symbol']}"):
-            st.session_state.selected_stock = stock
-            st.rerun()
+    
+    # Grupuj po ikonach
+    diamond_stocks_list = [s for s in display_stocks if s['category'] == 'diamond']
+    brown_stocks_list = [s for s in display_stocks if s['category'] == 'brown']
+    
+    if diamond_stocks_list:
+        st.markdown("**💎 RSI 25-35 (najlepsze okazje):**")
+        cols = st.columns(6)
+        for i, stock in enumerate(diamond_stocks_list):
+            col = cols[i % 6]
+            button_key = f"diamond_btn_{stock['symbol']}_{i}"
+            if col.button(f"{stock['icon']} {stock['symbol']}\nRSI: {stock['rsi']}", key=button_key, help=f"Analiza {stock['symbol']}"):
+                st.session_state.selected_stock = stock
+                st.rerun()
+    
+    if brown_stocks_list:
+        st.markdown("**🟤 RSI 35-40 (dobre okazje):**")
+        cols = st.columns(6)
+        for i, stock in enumerate(brown_stocks_list):
+            col = cols[i % 6]
+            button_key = f"brown_btn_{stock['symbol']}_{i}"
+            if col.button(f"{stock['icon']} {stock['symbol']}\nRSI: {stock['rsi']}", key=button_key, help=f"Analiza {stock['symbol']}"):
+                st.session_state.selected_stock = stock
+                st.rerun()
 
 # Szczegółowa analiza
 if 'selected_stock' in st.session_state:
@@ -410,15 +440,45 @@ if 'selected_stock' in st.session_state:
     col1.metric("💰 Cena", f"${stock['price']}")
     col2.metric("📊 RSI (14)", f"{stock['rsi']}")
     col3.metric("📉 EMA 200", f"${stock['ema_200']}")
-    col4.metric("🏢 Kapitalizacja", f"${stock['market_cap']/1e9:.1f}B" if stock['market_cap'] > 0 else "N/A")
+    
+    # Formatowanie kapitalizacji
+    if stock['market_cap'] > 0:
+        if stock['market_cap'] >= 1e12:
+            market_cap_str = f"${stock['market_cap']/1e12:.1f}T"
+        elif stock['market_cap'] >= 1e9:
+            market_cap_str = f"${stock['market_cap']/1e9:.1f}B"
+        elif stock['market_cap'] >= 1e6:
+            market_cap_str = f"${stock['market_cap']/1e6:.1f}M"
+        else:
+            market_cap_str = f"${stock['market_cap']:,.0f}"
+    else:
+        market_cap_str = "N/A"
+    
+    col4.metric("🏢 Kapitalizacja", market_cap_str)
     
     # Dodatkowe metryki
     col1, col2, col3, col4 = st.columns(4)
     price_vs_ema = ((stock['price'] / stock['ema_200']) - 1) * 100
     col1.metric("⚖️ vs EMA200", f"{price_vs_ema:+.1f}%")
     col2.metric("📊 Wolumen", f"{stock['volume']:,}")
+    
+    # Opis wolumenu
+    if stock['volume_ratio'] > 2.0:
+        vol_desc = "🔥 Bardzo wysoki"
+    elif stock['volume_ratio'] > 1.5:
+        vol_desc = "📈 Wysoki"
+    elif stock['volume_ratio'] > 1.0:
+        vol_desc = "📊 Normalny"
+    elif stock['volume_ratio'] > 0.5:
+        vol_desc = "📉 Niski"
+    else:
+        vol_desc = "❄️ Bardzo niski"
+    
     col3.metric("🔥 Vol ratio", f"{stock['volume_ratio']}x")
-    col4.metric("🏭 Sektor", stock['sector'])
+    col4.metric("🌡️ Aktywność", vol_desc)
+    
+    # Sektor
+    st.metric("🏭 Sektor", stock['sector'])
     
     # Wykresy
     tab1, tab2 = st.tabs(["📊 Świecowy + EMA200", "📈 RSI"])
@@ -431,6 +491,19 @@ if 'selected_stock' in st.session_state:
     
     # Eksport danych
     if st.button("📥 Eksportuj dane do CSV"):
+        # Formatowanie danych do eksportu
+        if stock['market_cap'] > 0:
+            if stock['market_cap'] >= 1e12:
+                market_cap_export = f"{stock['market_cap']/1e12:.2f}T"
+            elif stock['market_cap'] >= 1e9:
+                market_cap_export = f"{stock['market_cap']/1e9:.2f}B"
+            elif stock['market_cap'] >= 1e6:
+                market_cap_export = f"{stock['market_cap']/1e6:.2f}M"
+            else:
+                market_cap_export = f"{stock['market_cap']}"
+        else:
+            market_cap_export = "N/A"
+        
         df_export = pd.DataFrame([{
             'Symbol': stock['symbol'],
             'Cena': stock['price'],
@@ -438,7 +511,7 @@ if 'selected_stock' in st.session_state:
             'EMA200': stock['ema_200'],
             'Wolumen': stock['volume'],
             'Vol_ratio': stock['volume_ratio'],
-            'Kapitalizacja': stock['market_cap'],
+            'Kapitalizacja': market_cap_export,
             'Sektor': stock['sector']
         }])
         st.download_button(
