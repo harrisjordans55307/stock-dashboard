@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
+import requests
+from io import StringIO
 
 # Konfiguracja strony
 st.set_page_config(
@@ -21,16 +23,6 @@ st.markdown("""
         border-radius: 10px;
         color: white;
         margin-bottom: 1rem;
-    }
-    .stock-button {
-        margin: 0.2rem 0;
-        font-size: 12px;
-        padding: 0.2rem 0.5rem;
-        height: 50px;
-    }
-    .compact-slider .stSlider {
-        padding: 0;
-        margin: 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -58,60 +50,58 @@ def calculate_ema(series, period=200):
     """Oblicza EMA"""
     return series.ewm(span=period, adjust=False, min_periods=1).mean()
 
-@st.cache_data(ttl=300)
-def calculate_macd(series, fast=12, slow=26, signal=9):
-    """Oblicza MACD"""
-    ema_fast = series.ewm(span=fast, adjust=False).mean()
-    ema_slow = series.ewm(span=slow, adjust=False).mean()
-    macd = ema_fast - ema_slow
-    signal_line = macd.ewm(span=signal, adjust=False).mean()
-    histogram = macd - signal_line
-    return macd, signal_line, histogram
-
-@st.cache_data(ttl=300)
-def calculate_bollinger_bands(series, period=20, std_dev=2):
-    """Oblicza Bollinger Bands"""
-    sma = series.rolling(window=period).mean()
-    std = series.rolling(window=period).std()
-    upper = sma + (std * std_dev)
-    lower = sma - (std * std_dev)
-    return sma, upper, lower
-
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=86400)  # Cache na 24h
 def get_all_nasdaq_symbols():
-    """Rozszerzona lista symboli NASDAQ - więcej spółek"""
-    return [
-        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'ORCL',
-        'IBM', 'CSCO', 'ADBE', 'CRM', 'NOW', 'SNOW', 'ZM', 'TEAM', 'OKTA', 'DDOG',
-        'QCOM', 'TXN', 'AVGO', 'AMAT', 'LRCX', 'KLAC', 'MU', 'MCHP', 'ADI', 'MRVL',
-        'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'SCHW', 'AXP', 'V', 'MA', 'PYPL',
-        'SQ', 'AFRM', 'SOFI', 'HOOD', 'COIN', 'ALLY', 'FIS', 'FISV',
-        'JNJ', 'PFE', 'MRK', 'ABBV', 'LLY', 'ABT', 'MDT', 'BMY', 'UNH',
-        'GILD', 'AMGN', 'BIIB', 'REGN', 'VRTX', 'MRNA', 'BNTX',
-        'WMT', 'KO', 'PEP', 'PG', 'NKE', 'MCD', 'SBUX', 'COST', 'TGT', 'HD',
-        'EBAY', 'ETSY', 'SHOP', 'ROKU', 'NFLX', 'DIS', 'CMCSA', 'TMUS',
-        'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY', 'MPC', 'PSX', 'VLO',
-        'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX',
-        'INTU', 'ADP', 'WDAY', 'VEEV', 'TWLO', 'DOCU', 'PLTR', 'U', 'RBLX',
-        'UBER', 'LYFT', 'DASH', 'ABNB', 'ZS', 'CRWD', 'PANW', 'FTNT',
-        'CCI', 'AMT', 'VZ', 'T', 'SPOT', 'PINS', 'SNAP',
-        'DE', 'RTX', 'NOC', 'GD', 'CSX', 'NSC', 'ODFL', 'EXPD',
-        'LOW', 'BBY', 'DG', 'DLTR', 'CHTR', 'TTD', 'NVST', 'STNE',
-        'BILL', 'ZEN', 'NET', 'ESTC', 'MDB', 'SNOW', 'VEEV',
-        'TWLO', 'OKTA', 'DOCU', 'TEAM', 'NOW', 'SNPS', 'CDNS', 'ANSS'
-    ]
+    """Pobierz pełną listę spółek NASDAQ - tylko darmowe źródła"""
+    try:
+        # Źródło 1: Publiczne repozytorium GitHub
+        url = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main/nasdaq/nasdaq_tickers.csv"
+        df = pd.read_csv(url)
+        symbols = df['ticker'].tolist()
+        st.success(f"✅ Pobrano {len(symbols)} spółek z NASDAQ")
+        return symbols[:1000]  # Limit dla wydajności
+    except Exception as e1:
+        try:
+            # Źródło 2: Alternatywne repozytorium
+            url = "https://raw.githubusercontent.com/shilewenuw/get_all_tickers/master/get_all_tickers/tickers.csv"
+            response = requests.get(url)
+            df = pd.read_csv(StringIO(response.text))
+            symbols = df['ticker'].tolist()
+            st.success(f"✅ Pobrano {len(symbols)} spółek (alternatywne źródło)")
+            return symbols[:1000]
+        except Exception as e2:
+            # Źródło 3: Lista zapasowa
+            st.warning("⚠️ Używam listy zapasowej")
+            return [
+                'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'ORCL',
+                'IBM', 'CSCO', 'ADBE', 'CRM', 'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS',
+                'BLK', 'SCHW', 'AXP', 'V', 'MA', 'PYPL', 'SQ', 'JNJ', 'PFE', 'MRK',
+                'ABBV', 'LLY', 'ABT', 'MDT', 'BMY', 'UNH', 'GILD', 'AMGN', 'BIIB', 'REGN',
+                'VRTX', 'MRNA', 'BNTX', 'WMT', 'KO', 'PEP', 'PG', 'NKE', 'MCD', 'SBUX',
+                'COST', 'TGT', 'HD', 'EBAY', 'ETSY', 'SHOP', 'ROKU', 'NFLX', 'DIS', 'CMCSA',
+                'TMUS', 'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY', 'MPC', 'PSX',
+                'VLO', 'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX',
+                'INTU', 'ADP', 'WDAY', 'VEEV', 'TWLO', 'DOCU', 'PLTR', 'U', 'RBLX',
+                'UBER', 'LYFT', 'DASH', 'ABNB', 'ZS', 'CRWD', 'PANW', 'FTNT', 'CCI', 'AMT',
+                'VZ', 'T', 'SPOT', 'PINS', 'SNAP', 'DE', 'RTX', 'NOC', 'GD', 'CSX'
+            ]
 
-@st.cache_data(ttl=300)
-def get_top_symbols_by_volume(symbol_list, top_n=500):
-    """Sortuj symbole po wolumenie - więcej spółek"""
+@st.cache_data(ttl=3600)  # Cache na 1h
+def get_top_symbols_by_volume(symbol_list, top_n=700):
+    """Sortuj symbole po wolumenie - tylko yfinance"""
     symbol_data = []
     
     progress_text = st.empty()
+    progress_bar = st.progress(0)
     
     # Sprawdź więcej symboli dla lepszego pokrycia
-    for i, symbol in enumerate(symbol_list[:600]):
+    test_symbols = symbol_list[:800]
+    
+    for i, symbol in enumerate(test_symbols):
         try:
-            progress_text.text(f"Analizuję wolumen {symbol}... ({i+1}/600)")
+            progress_text.text(f"Analizuję wolumen {symbol}... ({i+1}/{len(test_symbols)})")
+            progress_bar.progress((i + 1) / len(test_symbols))
+            
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period="1mo")
             
@@ -119,16 +109,19 @@ def get_top_symbols_by_volume(symbol_list, top_n=500):
                 avg_volume = hist['Volume'].mean()
                 current_price = hist['Close'].iloc[-1]
                 
-                symbol_data.append({
-                    'symbol': symbol,
-                    'volume': float(avg_volume),
-                    'price': float(current_price)
-                })
+                # Filtruj tylko spółki z sensowną ceną i wolumenem
+                if current_price > 1.0 and avg_volume > 10000:
+                    symbol_data.append({
+                        'symbol': symbol,
+                        'volume': float(avg_volume),
+                        'price': float(current_price)
+                    })
                 
         except Exception as e:
             continue
     
     progress_text.empty()
+    progress_bar.empty()
     
     # Posortuj po wolumenie
     symbol_data.sort(key=lambda x: x['volume'], reverse=True)
@@ -137,7 +130,7 @@ def get_top_symbols_by_volume(symbol_list, top_n=500):
 
 @st.cache_data(ttl=300)
 def analyze_single_stock(symbol, rsi_min=25, rsi_max=40):
-    """Analizuje pojedynczą spółkę - poprawiony filtr RSI"""
+    """Analizuje pojedynczą spółkę - tylko yfinance"""
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period="1y", interval="1d")
@@ -150,12 +143,10 @@ def analyze_single_stock(symbol, rsi_min=25, rsi_max=40):
         df['ema_200'] = calculate_ema(df['Close'], 200)
         df['ema_50'] = calculate_ema(df['Close'], 50)
         df['volume_sma'] = df['Volume'].rolling(20).mean()
-        df['macd'], df['macd_signal'], df['macd_hist'] = calculate_macd(df['Close'])
-        df['bb_mid'], df['bb_upper'], df['bb_lower'] = calculate_bollinger_bands(df['Close'])
         
         latest = df.iloc[-1]
         
-        # Sprawdź czy RSI jest w interesującym zakresie (25-40) - POPRAWIONE
+        # Sprawdź czy RSI jest w interesującym zakresie
         if pd.isna(latest['rsi']) or latest['rsi'] < rsi_min or latest['rsi'] > rsi_max:
             return None
             
@@ -178,8 +169,8 @@ def analyze_single_stock(symbol, rsi_min=25, rsi_max=40):
         
         volume_ratio = latest['Volume'] / latest['volume_sma'] if latest['volume_sma'] > 0 else 1
         
-        # Oblicz potencjał kupna (0-100 punktów)
-        buy_potential = calculate_buy_potential(df, latest)
+        # Oblicz prosty potencjał kupna
+        buy_potential = calculate_simple_buy_potential(latest, df)
         
         return {
             'symbol': symbol,
@@ -200,69 +191,53 @@ def analyze_single_stock(symbol, rsi_min=25, rsi_max=40):
     except Exception as e:
         return None
 
-def calculate_buy_potential(df, latest):
-    """Oblicz potencjał kupna na podstawie wielu wskaźników (0-100)"""
+def calculate_simple_buy_potential(latest, df):
+    """Prosty potencjał kupna 0-100"""
     score = 0
-    max_score = 100
     
-    # RSI score (0-20)
+    # RSI (0-30)
     if latest['rsi'] <= 25:
-        score += 20
+        score += 30
     elif latest['rsi'] <= 30:
-        score += 15
+        score += 20
     elif latest['rsi'] <= 35:
         score += 10
-    else:
-        score += 5
     
-    # Price vs EMA200 (0-15)
-    price_vs_ema200 = (latest['Close'] / latest['ema_200']) - 1
-    if price_vs_ema200 > 0:
-        score += 15
-    elif price_vs_ema200 > -0.05:
-        score += 10
-    elif price_vs_ema200 > -0.10:
-        score += 5
-    
-    # MACD score (0-15)
-    if latest['macd'] > latest['macd_signal'] and latest['macd_hist'] > 0:
-        score += 15
-    elif latest['macd'] > latest['macd_signal']:
-        score += 10
-    elif latest['macd_hist'] > 0:
-        score += 5
-    
-    # Volume ratio (0-15)
-    if latest['volume_ratio'] > 2.0:
-        score += 15
-    elif latest['volume_ratio'] > 1.5:
-        score += 10
-    elif latest['volume_ratio'] > 1.0:
-        score += 5
-    
-    # Price vs BB (0-15)
-    if latest['Close'] < latest['bb_lower']:
-        score += 15
-    elif latest['Close'] < latest['bb_mid']:
-        score += 10
-    
-    # Trend confirmation (0-20)
-    recent_data = df.tail(30)
-    price_trend = (recent_data['Close'].iloc[-1] / recent_data['Close'].iloc[0]) - 1
-    if price_trend > 0:
+    # Price vs EMA200 (0-30)
+    price_vs_ema = (latest['Close'] / latest['ema_200']) - 1
+    if price_vs_ema > 0:
+        score += 30
+    elif price_vs_ema > -0.05:
         score += 20
-    elif price_trend > -0.05:
+    elif price_vs_ema > -0.10:
         score += 10
-    else:
-        score += 0
     
-    return min(score, max_score)
+    # Volume ratio (0-20)
+    if latest['volume_ratio'] > 2.0:
+        score += 20
+    elif latest['volume_ratio'] > 1.5:
+        score += 15
+    elif latest['volume_ratio'] > 1.0:
+        score += 10
+    
+    # Trend z 30 dni (0-20)
+    recent_data = df.tail(30)
+    if len(recent_data) > 1:
+        price_trend = (recent_data['Close'].iloc[-1] / recent_data['Close'].iloc[0]) - 1
+        if price_trend > 0:
+            score += 20
+        elif price_trend > -0.05:
+            score += 10
+    
+    return min(score, 100)
 
 def find_diamond_stocks(rsi_min=25, rsi_max=40, min_market_cap=0, max_market_cap=float('inf')):
-    """Znajdź diamenty - poprawiony filtr"""
-    # Pobierz spółki po wolumenie
+    """Znajdź diamenty - tylko yfinance i darmowe źródła"""
+    # Pobierz pełną listę spółek NASDAQ
     all_symbols = get_all_nasdaq_symbols()
-    top_symbols = get_top_symbols_by_volume(all_symbols, 500)
+    
+    # Posortuj po wolumenie
+    top_symbols = get_top_symbols_by_volume(all_symbols, 700)
     
     results = []
     processed_symbols = set()
@@ -294,114 +269,6 @@ def find_diamond_stocks(rsi_min=25, rsi_max=40, min_market_cap=0, max_market_cap
     
     return sorted(results, key=lambda x: x['buy_potential'], reverse=True)
 
-def create_candlestick_chart(stock_data):
-    """Wykres świecowy z EMA200 i Bollinger Bands"""
-    df = stock_data['data'].tail(120)
-    
-    fig = go.Figure()
-    
-    # Wykres świecowy
-    fig.add_trace(go.Candlestick(
-        x=df.index,
-        open=df['Open'],
-        high=df['High'],
-        low=df['Low'],
-        close=df['Close'],
-        name=stock_data['symbol']
-    ))
-    
-    # EMA 200
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['ema_200'],
-        name='EMA 200',
-        line=dict(color='orange', width=2)
-    ))
-    
-    # EMA 50
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['ema_50'],
-        name='EMA 50',
-        line=dict(color='blue', width=1.5)
-    ))
-    
-    # Bollinger Bands
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['bb_upper'],
-        name='BB Upper',
-        line=dict(color='purple', width=1, dash='dot')
-    ))
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['bb_lower'],
-        name='BB Lower',
-        line=dict(color='purple', width=1, dash='dot'),
-        fill='tonexty',
-        fillcolor='rgba(128, 0, 128, 0.1)'
-    ))
-    
-    fig.update_layout(
-        title=f"{stock_data['icon']} {stock_data['symbol']} - Potencjał: {stock_data['buy_potential']}/100",
-        xaxis_title='Data',
-        yaxis_title='Cena ($)',
-        height=500,
-        xaxis_rangeslider_visible=False
-    )
-    
-    return fig
-
-def create_technical_chart(stock_data):
-    """Wykres techniczny z RSI, MACD, Volume"""
-    df = stock_data['data'].tail(120)
-    
-    fig = go.Figure()
-    
-    # Cena
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['Close'],
-        name='Cena',
-        line=dict(color='blue', width=2)
-    ))
-    
-    # EMA linie
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['ema_200'],
-        name='EMA 200',
-        line=dict(color='orange', width=2)
-    ))
-    
-    # RSI jako subplot
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['rsi'],
-        name='RSI',
-        yaxis='y2',
-        line=dict(color='purple', width=2)
-    ))
-    
-    fig.update_layout(
-        title=f"Analiza techniczna {stock_data['symbol']}",
-        xaxis_title='Data',
-        yaxis_title='Cena ($)',
-        yaxis2=dict(
-            title='RSI',
-            overlaying='y',
-            side='right',
-            range=[0, 100]
-        ),
-        height=500
-    )
-    
-    # Dodaj linie RSI
-    fig.add_hline(y=30, line_dash="dash", line_color="green", yref="y2")
-    fig.add_hline(y=70, line_dash="dash", line_color="red", yref="y2")
-    
-    return fig
-
 # UI Aplikacji
 st.markdown("<div class='diamond-header'><h1>💎 Skaner Diamentów</h1></div>", unsafe_allow_html=True)
 
@@ -409,7 +276,7 @@ st.markdown("<div class='diamond-header'><h1>💎 Skaner Diamentów</h1></div>",
 with st.sidebar:
     st.header("🎯 Filtry")
     
-    # RSI - poprawione min/max
+    # RSI
     col1, col2 = st.columns(2)
     with col1:
         rsi_min = st.number_input("Min RSI", min_value=0, max_value=40, value=25, step=1)
@@ -426,22 +293,10 @@ with st.sidebar:
         max_cap_billions = st.number_input("Max (mld $)", min_value=0, value=1000, step=10)
         max_market_cap = max_cap_billions * 1e9 if max_cap_billions > 0 else float('inf')
     
-    # Analiza pojedynczego symbolu
-    st.subheader("🔍 Szybka analiza")
-    custom_symbol = st.text_input("Symbol", "")
-    if custom_symbol and st.button("Analizuj symbol"):
-        with st.spinner(f"Analizuję {custom_symbol.upper()}..."):
-            result = analyze_single_stock(custom_symbol.upper(), rsi_min=0, rsi_max=100)
-            if result:
-                st.session_state.selected_stock = result
-                st.success(f"✅ Znaleziono {custom_symbol.upper()}")
-            else:
-                st.error("❌ Nie znaleziono danych")
-    
     # Przycisk skanowania
     st.markdown("---")
     if st.button("🔍 Skanuj teraz", type="primary", use_container_width=True):
-        with st.spinner("🚀 Analizuję 500 spółek NASDAQ..."):
+        with st.spinner("🚀 Analizuję spółki NASDAQ..."):
             diamond_stocks = find_diamond_stocks(
                 rsi_min=rsi_min,
                 rsi_max=rsi_max,
@@ -453,19 +308,21 @@ with st.sidebar:
                 st.success(f"✅ Znaleziono {len(diamond_stocks)} spółek z RSI {rsi_min}-{rsi_max}!")
                 st.session_state.diamond_stocks = diamond_stocks
                 st.balloons()
-                
-                # Pokaż przykładowe wyniki dla debugowania
-                st.info(f"Przykładowe RSI znalezione: {[s['rsi'] for s in diamond_stocks[:5]]}")
             else:
                 st.warning("⚠️ Brak spółek spełniających kryteria")
                 
-                # Debugowanie - sprawdź czy ogólnie coś znajduje
+                # Debugowanie
                 with st.spinner("Sprawdzam alternatywne kryteria..."):
                     test_stocks = find_diamond_stocks(rsi_min=0, rsi_max=100, min_market_cap=0, max_market_cap=float('inf'))
                     if test_stocks:
-                        st.info(f"Znaleziono {len(test_stocks)} spółek bez filtrów RSI. Przykładowe RSI: {[s['rsi'] for s in test_stocks[:5]]}")
+                        st.info(f"Znaleziono {len(test_stocks)} spółek bez filtrów RSI")
+                        low_rsi_stocks = [s for s in test_stocks if 20 <= s['rsi'] <= 50][:5]
+                        if low_rsi_stocks:
+                            st.success("Przykładowe spółki z RSI 20-50:")
+                            for stock in low_rsi_stocks:
+                                st.write(f"  {stock['symbol']}: RSI {stock['rsi']}")
                     else:
-                        st.error("Nie znaleziono żadnych spółek - problem z połączeniem lub danymi")
+                        st.error("Nie znaleziono żadnych spółek")
 
 # Wyświetlanie wyników
 if 'diamond_stocks' in st.session_state:
@@ -480,7 +337,7 @@ if 'diamond_stocks' in st.session_state:
     col2.metric("🟤 RSI 35-40", browns)
     col3.metric("📊 Razem", len(stocks))
     
-    # Tabela wyników - bez sektora, z potencjałem kupna
+    # Tabela wyników
     st.subheader("📋 Znalezione spółki")
     
     table_data = []
@@ -522,135 +379,6 @@ if 'diamond_stocks' in st.session_state:
     
     df_display = pd.DataFrame(table_data)
     st.dataframe(df_display, use_container_width=True, height=500)
-    
-    # Przyciski spółek
-    st.subheader("💎 Kliknij spółkę do analizy")
-    
-    # Grupuj po ikonach
-    diamond_stocks_list = [s for s in stocks if s['category'] == 'diamond']
-    brown_stocks_list = [s for s in stocks if s['category'] == 'brown']
-    
-    if diamond_stocks_list:
-        st.markdown("**💎 RSI 25-35 (najlepsze okazje):**")
-        cols = st.columns(8)  # Więcej kolumn
-        for i, stock in enumerate(diamond_stocks_list[:24]):  # Pokaż pierwsze 24
-            col = cols[i % 8]
-            button_key = f"diamond_btn_{stock['symbol']}_{i}"
-            if col.button(f"{stock['icon']} {stock['symbol']}\nRSI: {stock['rsi']}\nPot: {stock['buy_potential']}", key=button_key, help=f"Analiza {stock['symbol']}"):
-                st.session_state.selected_stock = stock
-                st.rerun()
-    
-    if brown_stocks_list:
-        st.markdown("**🟤 RSI 35-40 (dobre okazje):**")
-        cols = st.columns(8)  # Więcej kolumn
-        for i, stock in enumerate(brown_stocks_list[:24]):  # Pokaż pierwsze 24
-            col = cols[i % 8]
-            button_key = f"brown_btn_{stock['symbol']}_{i}"
-            if col.button(f"{stock['icon']} {stock['symbol']}\nRSI: {stock['rsi']}\nPot: {stock['buy_potential']}", key=button_key, help=f"Analiza {stock['symbol']}"):
-                st.session_state.selected_stock = stock
-                st.rerun()
-
-# Szczegółowa analiza
-if 'selected_stock' in st.session_state:
-    stock = st.session_state.selected_stock
-    
-    st.markdown("---")
-    st.subheader(f"{stock['icon']} {stock['symbol']} - Szczegółowa analiza")
-    
-    # Metryki
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("💰 Cena", f"${stock['price']}")
-    col2.metric("📊 RSI (14)", f"{stock['rsi']}")
-    col3.metric("📉 EMA 200", f"${stock['ema_200']}")
-    
-    # Formatowanie kapitalizacji
-    if stock['market_cap'] > 0:
-        if stock['market_cap'] >= 1e12:
-            market_cap_str = f"${stock['market_cap']/1e12:.1f}T"
-        elif stock['market_cap'] >= 1e9:
-            market_cap_str = f"${stock['market_cap']/1e9:.1f}B"
-        elif stock['market_cap'] >= 1e6:
-            market_cap_str = f"${stock['market_cap']/1e6:.1f}M"
-        else:
-            market_cap_str = f"${stock['market_cap']:,.0f}"
-    else:
-        market_cap_str = "N/A"
-    
-    col4.metric("🏢 Kapitalizacja", market_cap_str)
-    
-    # Dodatkowe metryki
-    col1, col2, col3, col4 = st.columns(4)
-    price_vs_ema = ((stock['price'] / stock['ema_200']) - 1) * 100
-    col1.metric("⚖️ vs EMA200", f"{price_vs_ema:+.1f}%")
-    col2.metric("📊 Wolumen", f"{stock['volume']:,}")
-    
-    # Opis wolumenu
-    if stock['volume_ratio'] > 2.0:
-        vol_desc = "🔥 Bardzo wysoki"
-    elif stock['volume_ratio'] > 1.5:
-        vol_desc = "📈 Wysoki"
-    elif stock['volume_ratio'] > 1.0:
-        vol_desc = "📊 Normalny"
-    elif stock['volume_ratio'] > 0.5:
-        vol_desc = "📉 Niski"
-    else:
-        vol_desc = "❄️ Bardzo niski"
-    
-    col3.metric("🔥 Vol ratio", f"{stock['volume_ratio']}x")
-    col4.metric("🎯 Potencjał", f"{stock['buy_potential']}/100")
-    
-    # Ocena potencjału
-    st.subheader("📈 Ocena potencjału kupna")
-    if stock['buy_potential'] >= 80:
-        st.success(f"🚀 BARDZO DOBRY ({stock['buy_potential']}/100) - Silny sygnał kupna")
-    elif stock['buy_potential'] >= 60:
-        st.info(f"✅ DOBRY ({stock['buy_potential']}/100) - Umiarkowany sygnał kupna")
-    elif stock['buy_potential'] >= 40:
-        st.warning(f"🟡 ŚREDNI ({stock['buy_potential']}/100) - Ostrożne obserwowanie")
-    else:
-        st.error(f"🔴 SŁABY ({stock['buy_potential']}/100) - Niepewny sygnał")
-    
-    # Wykresy
-    tab1, tab2 = st.tabs(["📊 Techniczny", "📈 Szczegóły"])
-    
-    with tab1:
-        st.plotly_chart(create_technical_chart(stock), use_container_width=True)
-        
-    with tab2:
-        st.plotly_chart(create_candlestick_chart(stock), use_container_width=True)
-    
-    # Eksport danych
-    if st.button("📥 Eksportuj dane do CSV"):
-        # Formatowanie danych do eksportu
-        if stock['market_cap'] > 0:
-            if stock['market_cap'] >= 1e12:
-                market_cap_export = f"{stock['market_cap']/1e12:.2f}T"
-            elif stock['market_cap'] >= 1e9:
-                market_cap_export = f"{stock['market_cap']/1e9:.2f}B"
-            elif stock['market_cap'] >= 1e6:
-                market_cap_export = f"{stock['market_cap']/1e6:.2f}M"
-            else:
-                market_cap_export = f"{stock['market_cap']}"
-        else:
-            market_cap_export = "N/A"
-        
-        df_export = pd.DataFrame([{
-            'Symbol': stock['symbol'],
-            'Cena': stock['price'],
-            'RSI': stock['rsi'],
-            'EMA200': stock['ema_200'],
-            'EMA50': stock['ema_50'],
-            'Wolumen': stock['volume'],
-            'Vol_ratio': stock['volume_ratio'],
-            'Kapitalizacja': market_cap_export,
-            'Potencjał_kupna': stock['buy_potential']
-        }])
-        st.download_button(
-            "Pobierz CSV", 
-            df_export.to_csv(index=False), 
-            f"{stock['symbol']}_analiza.csv", 
-            "text/csv"
-        )
 
 else:
     st.info("🚀 Kliknij 'Skanuj teraz' w panelu bocznym, aby rozpocząć analizę")
