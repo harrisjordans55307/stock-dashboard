@@ -101,7 +101,7 @@ def get_all_nasdaq_symbols():
         
         # Energy
         'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY', 'MPC', 'PSX', 'VLO',
-        'ENB', 'TRP', 'EPD', 'SU', 'CVE', ' Imperial Oil
+        'ENB', 'TRP', 'EPD', 'SU', 'CVE',
         
         # Industrial
         'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX',
@@ -131,9 +131,9 @@ def get_all_nasdaq_symbols():
         'STZ', 'BF.B', 'DEO', 'APD', 'LIN', 'ARG', 'FCX', 'NEM',
         'GOLD', 'AEM', 'FNV', 'WPM', 'RIO', 'BHP', 'ECL', 'SHW',
         'PPG', 'ALB', 'DD', 'DOW', 'LYB', 'VMC', 'MLM', 'EXP',
-        'CAT', 'DE', 'ITW', 'LNT', 'WEC', 'AEP', 'DTE', 'ED',
-        'ES', 'EXC', 'FE', 'NEE', 'NI', 'NRG', 'PCG', 'PEG',
-        'PNW', 'PPL', 'SO', 'XEL', 'CMS', 'CNP', 'AWR', 'WTRG'
+        'LNT', 'WEC', 'AEP', 'DTE', 'ED', 'ES', 'EXC', 'FE', 
+        'NEE', 'NI', 'NRG', 'PCG', 'PEG', 'PNW', 'PPL', 'SO',
+        'XEL', 'CMS', 'CNP', 'AWR', 'WTRG'
     ]
 
 @st.cache_data(ttl=300)
