@@ -294,72 +294,36 @@ def find_diamond_stocks(rsi_min=25, rsi_max=40, min_market_cap=0, max_market_cap
     
     return sorted(results, key=lambda x: x['buy_potential'], reverse=True)
 
-# UI Aplikacji
-st.markdown("<div class='diamond-header'><h1>💎 Skaner Diamentów</h1></div>", unsafe_allow_html=True)
-
-# Sidebar
-with st.sidebar:
-    st.header("🎯 Filtry")
+def create_candlestick_chart(stock_data):
+    """Wykres świecowy z EMA200 i Bollinger Bands"""
+    df = stock_data['data'].tail(120)
     
-    # RSI - poprawione min/max
-    col1, col2 = st.columns(2)
-    with col1:
-        rsi_min = st.number_input("Min RSI", min_value=0, max_value=40, value=25, step=1)
-    with col2:
-        rsi_max = st.number_input("Max RSI", min_value=25, max_value=100, value=40, step=1)
+    fig = go.Figure()
     
-    # Kapitalizacja
-    st.subheader("Kapitalizacja")
-    col1, col2 = st.columns(2)
-    with col1:
-        min_cap_billions = st.number_input("Min (mld $)", min_value=0, value=0, step=1)
-        min_market_cap = min_cap_billions * 1e9
-    with col2:
-        max_cap_billions = st.number_input("Max (mld $)", min_value=0, value=1000, step=10)
-        max_market_cap = max_cap_billions * 1e9 if max_cap_billions > 0 else float('inf')
+    # Wykres świecowy
+    fig.add_trace(go.Candlestick(
+        x=df.index,
+        open=df['Open'],
+        high=df['High'],
+        low=df['Low'],
+        close=df['Close'],
+        name=stock_data['symbol']
+    ))
     
-    # Analiza pojedynczego symbolu
-    st.subheader("🔍 Szybka analiza")
-    custom_symbol = st.text_input("Symbol", "")
-    if custom_symbol and st.button("Analizuj symbol"):
-        with st.spinner(f"Analizuję {custom_symbol.upper()}..."):
-            result = analyze_single_stock(custom_symbol.upper(), rsi_min=0, rsi_max=100)
-            if result:
-                st.session_state.selected_stock = result
-                st.success(f"✅ Znaleziono {custom_symbol.upper()}")
-            else:
-                st.error("❌ Nie znaleziono danych")
+    # EMA 200
+    fig.add_trace(go.Scatter(
+        x=df.index,
+        y=df['ema_200'],
+        name='EMA 200',
+        line=dict(color='orange', width=2)
+    ))
     
-    # Przycisk skanowania
-    st.markdown("---")
-    if st.button("🔍 Skanuj teraz", type="primary", use_container_width=True):
-        with st.spinner("🚀 Analizuję 500 spółek NASDAQ..."):
-            diamond_stocks = find_diamond_stocks(
-                rsi_min=rsi_min,
-                rsi_max=rsi_max,
-                min_market_cap=min_market_cap,
-                max_market_cap=max_market_cap
-            )
-            
-            if diamond_stocks:
-                st.success(f"✅ Znaleziono {len(diamond_stocks)} spółek z RSI {rsi_min}-{rsi_max}!")
-                st.session_state.diamond_stocks = diamond_stocks
-                st.balloons()
-                
-                # Pokaż przykładowe wyniki dla debugowania
-                st.info(f"Przykładowe RSI znalezione: {[s['rsi'] for s in diamond_stocks[:5]]}")
-            else:
-                st.warning("⚠️ Brak spółek spełniających kryteria")
-                
-                # Debugowanie - sprawdź czy ogólnie coś znajduje
-                with st.spinner("Sprawdzam alternatywne kryteria..."):
-                    test_stocks = find_diamond_stocks(rsi_min=0, rsi_max=100, min_market_cap=0, max_market_cap=float('inf'))
-                    if test_stocks:
-                        st.info(f"Znaleziono {len(test_stocks)} spółek bez filtrów RSI. Przykładowe RSI: {[s['rsi'] for s in test_stocks[:5]]}")
-                    else:
-                        st.error("Nie znaleziono żadnych spółek - problem z połączeniem lub danymi")
-
-# Reszta kodu bez zmian...
+    # EMA 50
+    fig.add_trace(go.Scatter(
+        x=df.index,
+        y=df['ema_50'],
+        name='EMA 50',
+        line=dict(color='blue', width=1.5)
     ))
     
     # Bollinger Bands
@@ -445,10 +409,12 @@ st.markdown("<div class='diamond-header'><h1>💎 Skaner Diamentów</h1></div>",
 with st.sidebar:
     st.header("🎯 Filtry")
     
-    # RSI - kompaktowy suwak
-    st.markdown("<div class='compact-slider'>", unsafe_allow_html=True)
-    rsi_max = st.slider("Max RSI", 25, 40, 40, 1)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # RSI - poprawione min/max
+    col1, col2 = st.columns(2)
+    with col1:
+        rsi_min = st.number_input("Min RSI", min_value=0, max_value=40, value=25, step=1)
+    with col2:
+        rsi_max = st.number_input("Max RSI", min_value=25, max_value=100, value=40, step=1)
     
     # Kapitalizacja
     st.subheader("Kapitalizacja")
@@ -465,7 +431,7 @@ with st.sidebar:
     custom_symbol = st.text_input("Symbol", "")
     if custom_symbol and st.button("Analizuj symbol"):
         with st.spinner(f"Analizuję {custom_symbol.upper()}..."):
-            result = analyze_single_stock(custom_symbol.upper(), rsi_threshold_max=50)
+            result = analyze_single_stock(custom_symbol.upper(), rsi_min=0, rsi_max=100)
             if result:
                 st.session_state.selected_stock = result
                 st.success(f"✅ Znaleziono {custom_symbol.upper()}")
@@ -475,19 +441,31 @@ with st.sidebar:
     # Przycisk skanowania
     st.markdown("---")
     if st.button("🔍 Skanuj teraz", type="primary", use_container_width=True):
-        with st.spinner("🚀 Analizuję 700 spółek NASDAQ..."):
+        with st.spinner("🚀 Analizuję 500 spółek NASDAQ..."):
             diamond_stocks = find_diamond_stocks(
+                rsi_min=rsi_min,
                 rsi_max=rsi_max,
                 min_market_cap=min_market_cap,
                 max_market_cap=max_market_cap
             )
             
             if diamond_stocks:
-                st.success(f"✅ Znaleziono {len(diamond_stocks)} spółek z RSI 25-{rsi_max}!")
+                st.success(f"✅ Znaleziono {len(diamond_stocks)} spółek z RSI {rsi_min}-{rsi_max}!")
                 st.session_state.diamond_stocks = diamond_stocks
                 st.balloons()
+                
+                # Pokaż przykładowe wyniki dla debugowania
+                st.info(f"Przykładowe RSI znalezione: {[s['rsi'] for s in diamond_stocks[:5]]}")
             else:
                 st.warning("⚠️ Brak spółek spełniających kryteria")
+                
+                # Debugowanie - sprawdź czy ogólnie coś znajduje
+                with st.spinner("Sprawdzam alternatywne kryteria..."):
+                    test_stocks = find_diamond_stocks(rsi_min=0, rsi_max=100, min_market_cap=0, max_market_cap=float('inf'))
+                    if test_stocks:
+                        st.info(f"Znaleziono {len(test_stocks)} spółek bez filtrów RSI. Przykładowe RSI: {[s['rsi'] for s in test_stocks[:5]]}")
+                    else:
+                        st.error("Nie znaleziono żadnych spółek - problem z połączeniem lub danymi")
 
 # Wyświetlanie wyników
 if 'diamond_stocks' in st.session_state:
