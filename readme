@@ -1,0 +1,19 @@
+# 📊 Stock Dashboard
+
+Dashboard do analizy technicznej akcji z użyciem RSI i EMA200.
+
+## ✨ Funkcje
+- Analiza RSI (Relative Strength Index)
+- EMA 200 (Exponential Moving Average)
+- Interaktywne wykresy
+- Dane w czasie rzeczywistym z Yahoo Finance
+
+## 🚀 Jak uruchomić
+Aplikacja dostępna online: https://twoja-aplikacja.streamlit.app
+
+## 🛠️ Technologie
+- Python
+- Streamlit
+- yfinance
+- pandas
+- plotly
