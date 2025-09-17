@@ -68,9 +68,7 @@ def get_nasdaq_symbols():
         'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX', 'CSX',
         'QCOM', 'TXN', 'AVGO', 'INTU', 'ADP', 'FIS', 'FISV', 'CCI', 'AMAT', 'LRCX',
         'KLAC', 'MU', 'WDAY', 'NET', 'CRWD', 'ZS', 'PANW', 'FTNT', 'VRNS', 'CHKP',
-        'PLTR', 'SQ', 'ROKU', 'SHOP', 'ETSY', 'SE', 'AFRM', 'U', 'RIVN', 'LCID',
-        'VRTX', 'REGN', 'ISRG', 'BIIB', 'GILD', 'VRTX', 'ILMN', 'IDXX', 'ALGN', 'VRTX',
-        'COST', 'CMG', 'BKNG', 'VRTX', 'VRTX', 'VRTX', 'VRTX', 'VRTX', 'VRTX', 'VRTX'
+        'PLTR', 'SQ', 'ROKU', 'SHOP', 'ETSY', 'SE', 'AFRM', 'U', 'RIVN', 'LCID'
     ]
 
 def get_rsi_icon(rsi_value):
@@ -95,7 +93,7 @@ def analyze_single_stock(symbol):
             latest = df.iloc[-1]
             rsi_icon = get_rsi_icon(latest['rsi'])
             
-            if rsi_icon:
+            if rsi_icon and not pd.isna(latest['rsi']):
                 return {
                     'symbol': symbol,
                     'price': round(latest['Close'], 2),
@@ -106,7 +104,7 @@ def analyze_single_stock(symbol):
                     'volume': int(df['Volume'].iloc[-1])
                 }
         return None
-    except:
+    except Exception as e:
         return None
 
 def find_diamond_stocks():
@@ -174,7 +172,8 @@ if st.sidebar.button("🔍 Szukaj diamentów w top 200", type="primary"):
             col1, col2, col3 = st.columns(3)
             col1.metric("💎 Diamenty (25-35)", len(diamonds_25_35))
             col2.metric("🟤 Brązowe (35-40)", len(browns_35_40))
-            col3.metric("📈 Średni RSI", f"{np.mean([s['rsi'] for s in diamond_stocks]):.1f}")
+            if diamond_stocks:
+                col3.metric("📈 Średni RSI", f"{np.mean([s['rsi'] for s in diamond_stocks]):.1f}")
             
         else:
             st.info("ℹ️ Nie znaleziono spółek z RSI w zakresie 25-40")
@@ -194,46 +193,51 @@ if 'selected_stock' in st.session_state:
     
     # Wykres świecowy z EMA200
     df = stock['data']
-    fig = go.Figure()
     
-    # Wykres świecowy
-    fig.add_trace(go.Candlestick(
-        x=df.index,
-        open=df['Open'],
-        high=df['High'],
-        low=df['Low'],
-        close=df['Close'],
-        name='Świeczki'
-    ))
-    
-    # EMA 200
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['ema_200'],
-        name='EMA 200',
-        line=dict(color='orange', width=2)
-    ))
-    
-    fig.update_layout(
-        title=f'Wykres świecowy {stock["symbol"]} z EMA 200',
-        xaxis_title='Data',
-        yaxis_title='Cena ($)',
-        height=600,
-        xaxis_rangeslider_visible=False
-    )
-    st.plotly_chart(fig, use_container_width=True, theme="streamlit")
-    
-    # Wykres RSI
-    fig_rsi = go.Figure()
-    fig_rsi.add_trace(go.Scatter(x=df.index, y=df['rsi'], name='RSI (14)', line=dict(color='purple', width=2)))
-    fig_rsi.add_trace(go.Scatter(x=df.index, y=[30]*len(df), name='Oversold (30)', line=dict(color='green', dash='dash')))
-    fig_rsi.add_trace(go.Scatter(x=df.index, y=[70]*len(df), name='Overbought (70)', line=dict(color='red', dash='dash')))
-    fig_rsi.add_trace(go.Scatter(x=df.index, y=[25]*len(df), name='Super Oversold (25)', line=dict(color='darkgreen', dash='dot')))
-    fig_rsi.add_trace(go.Scatter(x=df.index, y=[40]*len(df), name='Górna granica (40)', line=dict(color='orange', dash='dot')))
-    fig_rsi.update_layout(title=f'RSI {stock["symbol"]}', xaxis_title='Data', yaxis_title='RSI', height=300)
-    st.plotly_chart(fig_rsi, use_container_width=True, theme="streamlit")
-
-# Informacje początkowe
+    # Sprawdź czy mamy dane
+    if not df.empty:
+        fig = go.Figure()
+        
+        # Wykres świecowy - tylko ostatnie 60 dni dla lepszej czytelności
+        df_plot = df.tail(60)
+        
+        fig.add_trace(go.Candlestick(
+            x=df_plot.index,
+            open=df_plot['Open'],
+            high=df_plot['High'],
+            low=df_plot['Low'],
+            close=df_plot['Close'],
+            name='Świeczki'
+        ))
+        
+        # EMA 200
+        fig.add_trace(go.Scatter(
+            x=df_plot.index,
+            y=df_plot['ema_200'],
+            name='EMA 200',
+            line=dict(color='orange', width=2)
+        ))
+        
+        fig.update_layout(
+            title=f'Wykres świecowy {stock["symbol"]} z EMA 200',
+            xaxis_title='Data',
+            yaxis_title='Cena ($)',
+            height=600,
+            xaxis_rangeslider_visible=False
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Wykres RSI
+        fig_rsi = go.Figure()
+        fig_rsi.add_trace(go.Scatter(x=df_plot.index, y=df_plot['rsi'], name='RSI (14)', line=dict(color='purple', width=2)))
+        fig_rsi.add_trace(go.Scatter(x=df_plot.index, y=[30]*len(df_plot), name='Oversold (30)', line=dict(color='green', dash='dash')))
+        fig_rsi.add_trace(go.Scatter(x=df_plot.index, y=[70]*len(df_plot), name='Overbought (70)', line=dict(color='red', dash='dash')))
+        fig_rsi.add_trace(go.Scatter(x=df_plot.index, y=[25]*len(df_plot), name='Super Oversold (25)', line=dict(color='darkgreen', dash='dot')))
+        fig_rsi.add_trace(go.Scatter(x=df_plot.index, y=[40]*len(df_plot), name='Górna granica (40)', line=dict(color='orange', dash='dot')))
+        fig_rsi.update_layout(title=f'RSI {stock["symbol"]}', xaxis_title='Data', yaxis_title='RSI', height=300)
+        st.plotly_chart(fig_rsi, use_container_width=True)
+    else:
+        st.error("❌ Nie udało się wygenerować wykresów")
 else:
     st.info("ℹ️ Kliknij 'Szukaj diamentów w top 200' w panelu bocznym, aby rozpocząć skanowanie")
     st.markdown("""
