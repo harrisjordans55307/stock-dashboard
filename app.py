@@ -1,8 +1,20 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import pandas_ta as ta
+import numpy as np
 import plotly.graph_objects as go
+
+# Własne funkcje zamiast pandas-ta
+def calculate_rsi(series, period=14):
+    delta = series.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def calculate_ema(series, period=200):
+    return series.ewm(span=period).mean()
 
 st.set_page_config(page_title="Dashboard Giełdowy", layout="wide")
 
@@ -21,9 +33,9 @@ if symbol:
             df = ticker.history(period=period, interval="1d")
             
             if not df.empty:
-                # Obliczenia techniczne
-                df.ta.rsi(length=14, append=True)
-                df.ta.ema(length=200, append=True)
+                # Obliczenia techniczne (własne funkcje)
+                df['RSI_14'] = calculate_rsi(df['close'], 14)
+                df['EMA_200'] = calculate_ema(df['close'], 200)
                 
                 latest = df.iloc[-1]
                 
