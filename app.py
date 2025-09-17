@@ -338,7 +338,7 @@ with st.sidebar:
                 st.session_state.diamond_stocks = diamond_stocks
                 st.balloons()
             else:
-                st.warning(⚠️ Brak spółek spełniających kryteria")
+                st.warning("⚠️ Brak spółek spełniających kryteria")
 
 # Wyświetlanie wyników
 if 'diamond_stocks' in st.session_state:
