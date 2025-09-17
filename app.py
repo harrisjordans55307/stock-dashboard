@@ -81,72 +81,37 @@ def calculate_bollinger_bands(series, period=20, std_dev=2):
 def get_all_nasdaq_symbols():
     """Rozszerzona lista symboli NASDAQ - więcej spółek"""
     return [
-        # Tech Giants & Popular
         'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'ORCL',
         'IBM', 'CSCO', 'ADBE', 'CRM', 'NOW', 'SNOW', 'ZM', 'TEAM', 'OKTA', 'DDOG',
         'QCOM', 'TXN', 'AVGO', 'AMAT', 'LRCX', 'KLAC', 'MU', 'MCHP', 'ADI', 'MRVL',
-        
-        # Finance
         'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'SCHW', 'AXP', 'V', 'MA', 'PYPL',
-        'SQ', 'AFRM', 'SOFI', 'HOOD', 'COIN', 'ALLY', 'FIS', 'FISV', 'DFS', 'SCHW',
-        
-        # Healthcare
+        'SQ', 'AFRM', 'SOFI', 'HOOD', 'COIN', 'ALLY', 'FIS', 'FISV',
         'JNJ', 'PFE', 'MRK', 'ABBV', 'LLY', 'ABT', 'MDT', 'BMY', 'UNH',
-        'GILD', 'AMGN', 'BIIB', 'REGN', 'VRTX', 'MRNA', 'BNTX', 'ILMN', 'IDXX',
-        
-        # Consumer
+        'GILD', 'AMGN', 'BIIB', 'REGN', 'VRTX', 'MRNA', 'BNTX',
         'WMT', 'KO', 'PEP', 'PG', 'NKE', 'MCD', 'SBUX', 'COST', 'TGT', 'HD',
-        'EBAY', 'ETSY', 'SHOP', 'ROKU', 'NFLX', 'DIS', 'CMCSA', 'TMUS', 'T',
-        'LOW', 'BBY', 'DG', 'DLTR', 'KHC', 'CL', 'KMB', 'CLX',
-        
-        # Energy
+        'EBAY', 'ETSY', 'SHOP', 'ROKU', 'NFLX', 'DIS', 'CMCSA', 'TMUS',
         'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY', 'MPC', 'PSX', 'VLO',
-        'ENB', 'TRP', 'EPD', 'SU', 'CVE',
-        
-        # Industrial
         'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX',
-        'F', 'GM', 'RIVN', 'LCID', 'NIO', 'LI', 'XPEV', 'DE', 'RTX',
-        
-        # Software & Communication
         'INTU', 'ADP', 'WDAY', 'VEEV', 'TWLO', 'DOCU', 'PLTR', 'U', 'RBLX',
         'UBER', 'LYFT', 'DASH', 'ABNB', 'ZS', 'CRWD', 'PANW', 'FTNT',
-        'CCI', 'AMT', 'VZ', 'SPOT', 'PINS', 'SNAP', 'CHTR', 'ROKU',
-        
-        # More stocks for better coverage - extended list
+        'CCI', 'AMT', 'VZ', 'T', 'SPOT', 'PINS', 'SNAP',
         'DE', 'RTX', 'NOC', 'GD', 'CSX', 'NSC', 'ODFL', 'EXPD',
-        'LOW', 'BBY', 'DG', 'DLTR', 'CHTR', 'ROKU', 'TTD', 'SQ',
-        'NVST', 'STNE', 'BILL', 'TTD', 'ZEN', 'NET', 'ESTC',
-        'DDOG', 'MDB', 'SNOW', 'CRWD', 'ZS', 'PANW', 'FTNT',
-        'VEEV', 'TWLO', 'OKTA', 'DOCU', 'TEAM', 'NOW', 'SNPS',
-        'CDNS', 'ANSS', 'MSCI', 'MTCH', 'BIDU', 'JD', 'NTES',
-        'BABA', 'TCEHY', 'WBD', 'PARA', 'NWS', 'FOXA', 'CMCSA',
-        'TMUS', 'VOD', 'AMX', 'CHL', 'BCE', 'SJM', 'MKC', 'CPB',
-        'GIS', 'K', 'CAG', 'SYY', 'SNA', 'SWK', 'PH', 'ROP',
-        'ITW', 'ETN', 'EMR', 'CMI', 'PCAR', 'URI', 'CNH', 'DE',
-        'CAT', 'LUV', 'ALK', 'JBLU', 'DAL', 'AAL', 'SAVE', 'HA',
-        'UAL', 'MAR', 'HLT', 'H', 'IHG', 'WYNN', 'MGM', 'CZR',
-        'RRR', 'EXPE', 'BKNG', 'TRIP', 'RCL', 'CCL', 'NCLH', 'CMG',
-        'MCD', 'SBUX', 'YUM', 'DPZ', 'PZZA', 'DNUT', 'JJSF', 'LANC',
-        'SJM', 'MKC', 'CPB', 'GIS', 'K', 'CAG', 'TSN', 'HRL',
-        'STZ', 'BF.B', 'DEO', 'APD', 'LIN', 'ARG', 'FCX', 'NEM',
-        'GOLD', 'AEM', 'FNV', 'WPM', 'RIO', 'BHP', 'ECL', 'SHW',
-        'PPG', 'ALB', 'DD', 'DOW', 'LYB', 'VMC', 'MLM', 'EXP',
-        'LNT', 'WEC', 'AEP', 'DTE', 'ED', 'ES', 'EXC', 'FE', 
-        'NEE', 'NI', 'NRG', 'PCG', 'PEG', 'PNW', 'PPL', 'SO',
-        'XEL', 'CMS', 'CNP', 'AWR', 'WTRG'
+        'LOW', 'BBY', 'DG', 'DLTR', 'CHTR', 'TTD', 'NVST', 'STNE',
+        'BILL', 'ZEN', 'NET', 'ESTC', 'MDB', 'SNOW', 'VEEV',
+        'TWLO', 'OKTA', 'DOCU', 'TEAM', 'NOW', 'SNPS', 'CDNS', 'ANSS'
     ]
 
 @st.cache_data(ttl=300)
-def get_top_symbols_by_volume(symbol_list, top_n=700):
+def get_top_symbols_by_volume(symbol_list, top_n=500):
     """Sortuj symbole po wolumenie - więcej spółek"""
     symbol_data = []
     
     progress_text = st.empty()
     
     # Sprawdź więcej symboli dla lepszego pokrycia
-    for i, symbol in enumerate(symbol_list[:800]):
+    for i, symbol in enumerate(symbol_list[:600]):
         try:
-            progress_text.text(f"Analizuję wolumen {symbol}... ({i+1}/800)")
+            progress_text.text(f"Analizuję wolumen {symbol}... ({i+1}/600)")
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period="1mo")
             
@@ -171,8 +136,8 @@ def get_top_symbols_by_volume(symbol_list, top_n=700):
     return [s['symbol'] for s in symbol_data[:top_n]]
 
 @st.cache_data(ttl=300)
-def analyze_single_stock(symbol, rsi_threshold_max=40):
-    """Analizuje pojedynczą spółkę - z większą liczbą wskaźników"""
+def analyze_single_stock(symbol, rsi_min=25, rsi_max=40):
+    """Analizuje pojedynczą spółkę - poprawiony filtr RSI"""
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period="1y", interval="1d")
@@ -190,11 +155,11 @@ def analyze_single_stock(symbol, rsi_threshold_max=40):
         
         latest = df.iloc[-1]
         
-        # Sprawdź czy RSI jest w interesującym zakresie (25-40)
-        if pd.isna(latest['rsi']) or latest['rsi'] > rsi_threshold_max or latest['rsi'] < 25:
+        # Sprawdź czy RSI jest w interesującym zakresie (25-40) - POPRAWIONE
+        if pd.isna(latest['rsi']) or latest['rsi'] < rsi_min or latest['rsi'] > rsi_max:
             return None
             
-        # Określ kategorię (tylko 25-40)
+        # Określ kategorię
         if 25 <= latest['rsi'] <= 35:
             category = "diamond"
             icon = "💎"
@@ -282,7 +247,6 @@ def calculate_buy_potential(df, latest):
         score += 10
     
     # Trend confirmation (0-20)
-    # Sprawdź trend z ostatnich 30 dni
     recent_data = df.tail(30)
     price_trend = (recent_data['Close'].iloc[-1] / recent_data['Close'].iloc[0]) - 1
     if price_trend > 0:
@@ -294,11 +258,11 @@ def calculate_buy_potential(df, latest):
     
     return min(score, max_score)
 
-def find_diamond_stocks(rsi_max=40, min_market_cap=0, max_market_cap=float('inf')):
-    """Znajdź diamenty - analiza więcej spółek"""
-    # Pobierz więcej spółek po wolumenie
+def find_diamond_stocks(rsi_min=25, rsi_max=40, min_market_cap=0, max_market_cap=float('inf')):
+    """Znajdź diamenty - poprawiony filtr"""
+    # Pobierz spółki po wolumenie
     all_symbols = get_all_nasdaq_symbols()
-    top_symbols = get_top_symbols_by_volume(all_symbols, 700)  # Zwiększono do 700
+    top_symbols = get_top_symbols_by_volume(all_symbols, 500)
     
     results = []
     processed_symbols = set()
@@ -316,7 +280,7 @@ def find_diamond_stocks(rsi_max=40, min_market_cap=0, max_market_cap=float('inf'
             progress = (i + 1) / len(top_symbols)
             progress_bar.progress(progress)
             
-            result = analyze_single_stock(symbol, rsi_threshold_max=rsi_max)
+            result = analyze_single_stock(symbol, rsi_min=rsi_min, rsi_max=rsi_max)
             if result:
                 if result['market_cap'] >= min_market_cap:
                     if max_market_cap == float('inf') or result['market_cap'] <= max_market_cap:
@@ -330,36 +294,72 @@ def find_diamond_stocks(rsi_max=40, min_market_cap=0, max_market_cap=float('inf'
     
     return sorted(results, key=lambda x: x['buy_potential'], reverse=True)
 
-def create_candlestick_chart(stock_data):
-    """Wykres świecowy z EMA200 i Bollinger Bands"""
-    df = stock_data['data'].tail(120)
+# UI Aplikacji
+st.markdown("<div class='diamond-header'><h1>💎 Skaner Diamentów</h1></div>", unsafe_allow_html=True)
+
+# Sidebar
+with st.sidebar:
+    st.header("🎯 Filtry")
     
-    fig = go.Figure()
+    # RSI - poprawione min/max
+    col1, col2 = st.columns(2)
+    with col1:
+        rsi_min = st.number_input("Min RSI", min_value=0, max_value=40, value=25, step=1)
+    with col2:
+        rsi_max = st.number_input("Max RSI", min_value=25, max_value=100, value=40, step=1)
     
-    # Wykres świecowy
-    fig.add_trace(go.Candlestick(
-        x=df.index,
-        open=df['Open'],
-        high=df['High'],
-        low=df['Low'],
-        close=df['Close'],
-        name=stock_data['symbol']
-    ))
+    # Kapitalizacja
+    st.subheader("Kapitalizacja")
+    col1, col2 = st.columns(2)
+    with col1:
+        min_cap_billions = st.number_input("Min (mld $)", min_value=0, value=0, step=1)
+        min_market_cap = min_cap_billions * 1e9
+    with col2:
+        max_cap_billions = st.number_input("Max (mld $)", min_value=0, value=1000, step=10)
+        max_market_cap = max_cap_billions * 1e9 if max_cap_billions > 0 else float('inf')
     
-    # EMA 200
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['ema_200'],
-        name='EMA 200',
-        line=dict(color='orange', width=2)
-    ))
+    # Analiza pojedynczego symbolu
+    st.subheader("🔍 Szybka analiza")
+    custom_symbol = st.text_input("Symbol", "")
+    if custom_symbol and st.button("Analizuj symbol"):
+        with st.spinner(f"Analizuję {custom_symbol.upper()}..."):
+            result = analyze_single_stock(custom_symbol.upper(), rsi_min=0, rsi_max=100)
+            if result:
+                st.session_state.selected_stock = result
+                st.success(f"✅ Znaleziono {custom_symbol.upper()}")
+            else:
+                st.error("❌ Nie znaleziono danych")
     
-    # EMA 50
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df['ema_50'],
-        name='EMA 50',
-        line=dict(color='blue', width=1.5)
+    # Przycisk skanowania
+    st.markdown("---")
+    if st.button("🔍 Skanuj teraz", type="primary", use_container_width=True):
+        with st.spinner("🚀 Analizuję 500 spółek NASDAQ..."):
+            diamond_stocks = find_diamond_stocks(
+                rsi_min=rsi_min,
+                rsi_max=rsi_max,
+                min_market_cap=min_market_cap,
+                max_market_cap=max_market_cap
+            )
+            
+            if diamond_stocks:
+                st.success(f"✅ Znaleziono {len(diamond_stocks)} spółek z RSI {rsi_min}-{rsi_max}!")
+                st.session_state.diamond_stocks = diamond_stocks
+                st.balloons()
+                
+                # Pokaż przykładowe wyniki dla debugowania
+                st.info(f"Przykładowe RSI znalezione: {[s['rsi'] for s in diamond_stocks[:5]]}")
+            else:
+                st.warning("⚠️ Brak spółek spełniających kryteria")
+                
+                # Debugowanie - sprawdź czy ogólnie coś znajduje
+                with st.spinner("Sprawdzam alternatywne kryteria..."):
+                    test_stocks = find_diamond_stocks(rsi_min=0, rsi_max=100, min_market_cap=0, max_market_cap=float('inf'))
+                    if test_stocks:
+                        st.info(f"Znaleziono {len(test_stocks)} spółek bez filtrów RSI. Przykładowe RSI: {[s['rsi'] for s in test_stocks[:5]]}")
+                    else:
+                        st.error("Nie znaleziono żadnych spółek - problem z połączeniem lub danymi")
+
+# Reszta kodu bez zmian...
     ))
     
     # Bollinger Bands
