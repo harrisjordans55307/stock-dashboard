@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS - uczynione bardziej kompaktowym
+# Custom CSS
 st.markdown("""
 <style>
     .metric-container {
@@ -39,6 +39,7 @@ st.markdown("""
     .stButton > button {
         width: 100%;
         margin-bottom: 0.2rem;
+        font-size: 12px;
     }
     .stDataFrame {
         font-size: 12px;
@@ -47,9 +48,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Funkcje pomocnicze
-@st.cache_data(ttl=300)  # Cache na 5 minut
+@st.cache_data(ttl=300)
 def calculate_rsi(series, period=14):
-    """Oblicza RSI z poprawnym wygładzaniem (używa EMA zamiast SMA dla avg gain/loss)"""
+    """Oblicza RSI z poprawnym wygładzaniem"""
     delta = series.diff(1)
     if len(delta) < period:
         return pd.Series([np.nan] * len(series), index=series.index)
@@ -57,7 +58,6 @@ def calculate_rsi(series, period=14):
     gain = delta.where(delta > 0, 0)
     loss = -delta.where(delta < 0, 0)
     
-    # Użyj ewm z com=period-1 dla Wilder's smoothing
     avg_gain = gain.ewm(com=period-1, min_periods=period, adjust=False).mean()
     avg_loss = loss.ewm(com=period-1, min_periods=period, adjust=False).mean()
     
@@ -91,45 +91,23 @@ def calculate_bollinger_bands(series, period=20, std_dev=2):
 
 @st.cache_data(ttl=600)
 def get_top_nasdaq_symbols():
-    """Lista popularnych symboli NASDAQ - zmniejszona dla stabilności"""
+    """Lista popularnych symboli NASDAQ"""
     return [
-        # Tech Giants & Popular stocks
         'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'ORCL',
         'IBM', 'CSCO', 'ADBE', 'CRM', 'NOW', 'SNOW', 'ZM', 'TEAM', 'OKTA', 'DDOG',
-        
-        # Finance
         'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'SCHW', 'AXP', 'V', 'MA', 'PYPL',
-        'SQ', 'AFRM', 'SOFI', 'HOOD', 'COIN',
-        
-        # Healthcare & Biotech
         'JNJ', 'PFE', 'MRK', 'ABBV', 'LLY', 'ABT', 'MDT', 'BMY', 'UNH',
-        'GILD', 'AMGN', 'BIIB', 'REGN', 'VRTX', 'MRNA', 'BNTX',
-        
-        # Consumer
         'WMT', 'KO', 'PEP', 'PG', 'NKE', 'MCD', 'SBUX', 'COST', 'TGT', 'HD',
-        'EBAY', 'ETSY', 'SHOP', 'ROKU', 'NFLX', 'DIS',
-        
-        # Energy
         'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'KMI', 'OXY',
-        
-        # Industrial
         'BA', 'CAT', 'GE', 'HON', 'LMT', 'MMM', 'UNP', 'UPS', 'FDX',
-        'F', 'GM', 'RIVN', 'LCID',
-        
-        # Semiconductors
         'QCOM', 'TXN', 'AVGO', 'AMAT', 'LRCX', 'KLAC', 'MU', 'MCHP', 'ADI', 'MRVL',
-        
-        # Software
-        'INTU', 'ADP', 'WDAY', 'VEEV', 'TWLO', 'DOCU', 'PLTR', 'U', 'RBLX',
-        'UBER', 'LYFT', 'DASH', 'ABNB',
-        
-        # Communication
-        'CCI', 'AMT', 'TMUS', 'VZ', 'T', 'SPOT', 'PINS', 'SNAP'
+        'INTU', 'ADP', 'WDAY', 'TWLO', 'DOCU', 'PLTR', 'U', 'RBLX',
+        'UBER', 'LYFT', 'DASH', 'ABNB', 'CCI', 'AMT', 'TMUS', 'VZ', 'T'
     ]
 
 @st.cache_data(ttl=300)
 def analyze_single_stock(symbol, period="1y", rsi_threshold=40):
-    """Analizuje pojedynczą spółkę - dodano MACD i Bollinger Bands"""
+    """Analizuje pojedynczą spółkę"""
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period=period, interval="1d")
@@ -200,8 +178,8 @@ def analyze_single_stock(symbol, period="1y", rsi_threshold=40):
     except Exception as e:
         return None
 
-def find_diamond_stocks(rsi_threshold=40):
-    """Znajdź diamenty - wersja bez threading"""
+def find_diamond_stocks(rsi_threshold=40, min_market_cap=0, max_market_cap=float('inf')):
+    """Znajdź diamenty"""
     symbols = get_top_nasdaq_symbols()
     results = []
     
@@ -215,7 +193,7 @@ def find_diamond_stocks(rsi_threshold=40):
             progress_bar.progress(progress)
             
             result = analyze_single_stock(symbol, rsi_threshold=rsi_threshold)
-            if result:
+            if result and result['market_cap'] >= min_market_cap and result['market_cap'] <= max_market_cap:
                 results.append(result)
                 status_text.text(f"🔍 Znaleziono {len(results)} diamentów... ({i+1}/{len(symbols)})")
                 
@@ -228,7 +206,7 @@ def find_diamond_stocks(rsi_threshold=40):
     return sorted(results, key=lambda x: x['rsi'])
 
 def create_simple_candlestick_chart(stock_data):
-    """Prosty wykres świecowy z EMA i Bollinger Bands - kompaktowy"""
+    """Prosty wykres świecowy z EMA i Bollinger Bands"""
     df = stock_data['data'].tail(90)  # Ostatnie 90 dni
     
     fig = go.Figure()
@@ -272,24 +250,26 @@ def create_simple_candlestick_chart(stock_data):
         x=df.index,
         y=df['bb_lower'],
         name='BB Lower',
-        line=dict(color='#8b5cf6', width=1, dash='dot')
+        line=dict(color='#8b5cf6', width=1, dash='dot'),
+        fill='tonexty',
+        fillcolor='rgba(139, 92, 246, 0.1)'
     ))
     
     fig.update_layout(
         title=f"{stock_data['icon']} {stock_data['symbol']} | RSI: {stock_data['rsi']} | Sektor: {stock_data['sector']}",
         xaxis_title='Data',
         yaxis_title='Cena ($)',
-        height=400,  # Zmniejszona wysokość dla kompaktowości
+        height=500,
         template='plotly_dark',
         xaxis_rangeslider_visible=False,
         showlegend=True,
-        margin=dict(l=20, r=20, t=40, b=20)
+        margin=dict(l=20, r=20, t=60, b=20)
     )
     
     return fig
 
 def create_rsi_chart(stock_data):
-    """Osobny wykres RSI - kompaktowy"""
+    """Osobny wykres RSI"""
     df = stock_data['data'].tail(90)
     
     fig = go.Figure()
@@ -303,9 +283,9 @@ def create_rsi_chart(stock_data):
     ))
     
     # Poziomy RSI
-    fig.add_hline(y=70, line_dash="dash", line_color='#ef4444')
-    fig.add_hline(y=30, line_dash="dash", line_color='#10b981')
-    fig.add_hline(y=25, line_dash="dot", line_color='#059669')
+    fig.add_hline(y=70, line_dash="dash", line_color='#ef4444', annotation_text="Przekupione")
+    fig.add_hline(y=30, line_dash="dash", line_color='#10b981', annotation_text="Wyprzedane")
+    fig.add_hline(y=25, line_dash="dot", line_color='#059669', annotation_text="Ekstremalne")
     
     # Aktualny RSI
     current_rsi = df['rsi'].iloc[-1]
@@ -322,7 +302,7 @@ def create_rsi_chart(stock_data):
         xaxis_title='Data',
         yaxis_title='RSI',
         yaxis=dict(range=[0, 100]),
-        height=250,  # Zmniejszona wysokość
+        height=300,
         template='plotly_dark',
         margin=dict(l=20, r=20, t=40, b=20)
     )
@@ -363,195 +343,236 @@ def create_macd_chart(stock_data):
         title=f"📉 MACD dla {stock_data['symbol']}",
         xaxis_title='Data',
         yaxis_title='MACD',
-        height=250,
+        height=300,
         template='plotly_dark',
         margin=dict(l=20, r=20, t=40, b=20)
     )
     
     return fig
 
-# UI Aplikacji - bardziej kompaktowy, z tabs i expanderami
+# UI Aplikacji
 st.title("💎 Skaner Diamentów NASDAQ")
 st.markdown("*Znajdź okazje wśród wyprzedanych akcji*")
 
-# Sidebar - kompaktowy
+# Sidebar
 with st.sidebar:
     st.header("🎯 Kontrola")
     
     # Filtry
-    max_rsi = st.slider("Max RSI", 20, 50, 40, 5)
-    min_market_cap = st.selectbox(
-        "Min Kap.", 
-        [0, 1e9, 5e9, 10e9, 50e9], 
-        format_func=lambda x: f"${x/1e9:.0f}B" if x > 0 else "Wszystkie"
-    )
-    sectors = sorted(set([s.get('sector', 'N/A') for s in st.session_state.get('diamond_stocks', [])]))
-    selected_sector = st.selectbox("Sektor", ["Wszystkie"] + sectors)
+    max_rsi = st.slider("Max RSI", 20, 50, 40, 1)
+    
+    # Filtry kapitalizacji
+    col1, col2 = st.columns(2)
+    with col1:
+        min_market_cap_billions = st.number_input("Min kapitalizacja (mld $)", min_value=0, value=0, step=1)
+        min_market_cap = min_market_cap_billions * 1e9
+    with col2:
+        max_market_cap_billions = st.number_input("Max kapitalizacja (mld $)", min_value=0, value=1000, step=10)
+        max_market_cap = max_market_cap_billions * 1e9 if max_market_cap_billions > 0 else float('inf')
+    
+    sectors = ['Wszystkie'] + sorted(set([s.get('sector', 'N/A') for s in st.session_state.get('diamond_stocks', []) if s.get('sector')]))
+    selected_sector = st.selectbox("Sektor", sectors)
     
     # Okres danych
     data_period = st.selectbox("Okres danych", ["1y", "6mo", "3mo", "1mo"], index=0)
     
-    # Wyszukiwanie pojedynczego symbolu - nowa funkcja
+    # Wyszukiwanie pojedynczego symbolu
     custom_symbol = st.text_input("Analizuj symbol", "")
     if custom_symbol:
-        if st.button("Analizuj"):
-            result = analyze_single_stock(custom_symbol.upper(), period=data_period, rsi_threshold=max_rsi)
-            if result:
-                st.session_state.selected_stock = result
-            else:
-                st.error("Nie znaleziono danych dla symbolu.")
+        if st.button("🔍 Analizuj"):
+            with st.spinner(f"Analizuję {custom_symbol.upper()}..."):
+                result = analyze_single_stock(custom_symbol.upper(), period=data_period, rsi_threshold=max_rsi)
+                if result:
+                    st.session_state.selected_stock = result
+                    st.success(f"✅ Znaleziono {custom_symbol.upper()}")
+                else:
+                    st.error("❌ Nie znaleziono danych")
     
     # Przycisk skanowania
     if st.button("🔍 Skanuj", type="primary"):
-        with st.spinner("🚀 Szukam..."):
-            diamond_stocks = find_diamond_stocks(rsi_threshold=max_rsi)
+        with st.spinner("🚀 Szukam diamentów..."):
+            diamond_stocks = find_diamond_stocks(
+                rsi_threshold=max_rsi,
+                min_market_cap=min_market_cap,
+                max_market_cap=max_market_cap
+            )
             
             # Filtruj wyniki
             filtered_stocks = [
                 s for s in diamond_stocks 
-                if s['rsi'] <= max_rsi and s['market_cap'] >= min_market_cap
-                and (selected_sector == "Wszystkie" or s['sector'] == selected_sector)
+                if (selected_sector == "Wszystkie" or s['sector'] == selected_sector)
             ]
             
             if filtered_stocks:
-                st.success(f"✅ {len(filtered_stocks)} diamentów!")
+                st.success(f"✅ Znaleziono {len(filtered_stocks)} diamentów!")
                 st.session_state.diamond_stocks = filtered_stocks
             else:
-                st.warning("⚠️ Brak wyników")
+                st.warning("⚠️ Brak wyników spełniających kryteria")
     
-    # Automatyczne odświeżanie - nowa funkcja
-    auto_refresh = st.checkbox("Auto-odśwież co 5 min")
-    if auto_refresh:
-        time.sleep(300)
-        st.rerun()
-    
-    # Eksport do CSV - nowa funkcja
+    # Eksport do CSV
     if 'diamond_stocks' in st.session_state:
         df_export = pd.DataFrame([{
             'Symbol': s['symbol'],
             'Cena': s['price'],
             'RSI': s['rsi'],
+            'EMA50': s['ema_50'],
+            'EMA200': s['ema_200'],
             'Sektor': s['sector'],
-            'Kapitalizacja': s['market_cap']
+            'Kapitalizacja': f"${s['market_cap']/1e9:.1f}B" if s['market_cap'] > 0 else "N/A",
+            'Wolumen x': s['volume_ratio']
         } for s in st.session_state.diamond_stocks])
-        st.download_button("📥 Eksport CSV", df_export.to_csv(index=False), "diamenty.csv")
+        st.download_button("📥 Eksport CSV", df_export.to_csv(index=False), "diamenty.csv", "text/csv")
 
-# Wyświetlanie wyników - w expanderze dla kompaktowości
+# Wyświetlanie wyników
 if 'diamond_stocks' in st.session_state:
     stocks = st.session_state.diamond_stocks
     
-    # Statystyki - mniej kolumn
-    col1, col2 = st.columns(2)
+    # Statystyki
+    col1, col2, col3, col4 = st.columns(4)
     super_oversold = len([s for s in stocks if s['category'] == 'super_oversold'])
     oversold = len([s for s in stocks if s['category'] == 'oversold'])
     mild_oversold = len([s for s in stocks if s['category'] == 'mild_oversold'])
-    watchlist = len([s for s in stocks if s['category'] == 'watchlist'])
     
-    with col1:
-        st.metric("💎 <25", super_oversold)
-        st.metric("💍 <30", oversold)
-    with col2:
-        st.metric("🟡 <35", mild_oversold)
-        st.metric("🟤 <40", watchlist)
+    col1.metric("💎 RSI <25", super_oversold)
+    col2.metric("💍 RSI <30", oversold)
+    col3.metric("🟡 RSI <35", mild_oversold)
+    col4.metric("📊 Razem", len(stocks))
     
-    # Tabela wyników - mniejsza
-    with st.expander("📊 Diamenty", expanded=True):
-        table_data = [{
+    # Tabela wyników
+    st.subheader("📋 Diamenty")
+    table_data = []
+    for s in stocks:
+        table_data.append({
             'Symbol': f"{s['icon']} {s['symbol']}",
             'Cena': f"${s['price']}",
             'RSI': f"{s['rsi']:.1f}",
-            'Sektor': s['sector'][:10] + "..." if len(s['sector']) > 10 else s['sector'],
-            'Vol x': f"{s['volume_ratio']}x"
-        } for s in stocks]
-        df_display = pd.DataFrame(table_data)
-        st.dataframe(df_display, use_container_width=True, height=200)  # Zmniejszona wysokość
+            'EMA200': f"${s['ema_200']}",
+            'Sektor': s['sector'][:15] + "..." if len(s['sector']) > 15 else s['sector'],
+            'Vol x': f"{s['volume_ratio']:.1f}x"
+        })
     
-    # Lista spółek w sidebar - już jest
+    df_display = pd.DataFrame(table_data)
+    st.dataframe(df_display, use_container_width=True, height=300)
+    
+    # Lista spółek do klikania
+    st.subheader("💎 Spółki do analizy")
+    cols = st.columns(5)
+    for i, stock in enumerate(stocks):
+        col = cols[i % 5]
+        if col.button(f"{stock['icon']} {stock['symbol']}\nRSI: {stock['rsi']}", key=f"btn_{stock['symbol']}"):
+            st.session_state.selected_stock = stock
+            st.rerun()
 
-# Szczegółowa analiza - w tabs dla kompaktowości
+# Szczegółowa analiza
 if 'selected_stock' in st.session_state:
     stock = st.session_state.selected_stock
     
-    st.subheader(f"{stock['icon']} {stock['symbol']}")
+    st.markdown("---")
+    st.subheader(f"{stock['icon']} {stock['symbol']} - Szczegółowa analiza")
     
-    # Metryki - mniej kolumn
-    col1, col2, col3 = st.columns(3)
+    # Metryki
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("💰 Cena", f"${stock['price']}")
-        st.metric("📊 RSI", f"{stock['rsi']}")
+        st.metric("💰 Aktualna cena", f"${stock['price']}")
+        st.metric("📊 RSI (14)", f"{stock['rsi']}")
     with col2:
-        st.metric("📈 EMA50", f"${stock['ema_50']}")
-        st.metric("📉 EMA200", f"${stock['ema_200']}")
+        st.metric("📈 EMA 50", f"${stock['ema_50']}")
+        st.metric("📉 EMA 200", f"${stock['ema_200']}")
     with col3:
-        st.metric("🔥 Vol x", f"{stock['volume_ratio']}x")
+        st.metric("📊 Wolumen", f"{stock['volume']:,}")
+        volume_desc = "Wysoki" if stock['volume_ratio'] > 1.5 else "Normalny" if stock['volume_ratio'] > 0.8 else "Niski"
+        st.metric("🔥 Aktywność", f"{volume_desc} ({stock['volume_ratio']}x)")
+    with col4:
         price_to_ema = ((stock['price'] / stock['ema_200']) - 1) * 100
-        st.metric("vs EMA200", f"{price_to_ema:+.1f}%")
+        st.metric("⚖️ vs EMA200", f"{price_to_ema:+.1f}%")
+        market_cap_formatted = f"${stock['market_cap']/1e9:.1f}B" if stock['market_cap'] > 0 else "N/A"
+        st.metric("🏢 Kapitalizacja", market_cap_formatted)
     
-    # Wykresy w tabs
-    tab1, tab2, tab3 = st.tabs(["Świece", "RSI", "MACD"])
+    # Wykresy
+    tab1, tab2, tab3 = st.tabs(["📊 Świecowy", "📈 RSI", "📉 MACD"])
+    
     with tab1:
         st.plotly_chart(create_simple_candlestick_chart(stock), use_container_width=True)
+        
     with tab2:
         st.plotly_chart(create_rsi_chart(stock), use_container_width=True)
+        
     with tab3:
         st.plotly_chart(create_macd_chart(stock), use_container_width=True)
     
-    # Analiza w expanderach
-    with st.expander("🎯 Sygnały"):
-        if stock['rsi'] < 25:
-            st.success("🔥 SILNY KUPNO")
-        elif stock['rsi'] < 30:
-            st.success("💚 KUPNO")
-        elif stock['rsi'] < 35:
-            st.warning("🟡 MOŻLIWOŚĆ")
-        else:
-            st.info("🟤 OBSERWACJA")
+    # Analiza sygnałów
+    with st.expander("🎯 Sygnały handlowe", expanded=True):
+        col1, col2, col3 = st.columns(3)
         
-        if stock['price'] < stock['ema_200']:
-            st.warning("⚠️ Trend spadkowy")
-        else:
-            st.success("✅ Trend wzrostowy")
+        with col1:
+            st.subheader("RSI")
+            if stock['rsi'] < 25:
+                st.success("🔥 EKSTREMALNE WYPRZEDANIE")
+            elif stock['rsi'] < 30:
+                st.success("💚 SILNE WYPRZEDANIE")
+            elif stock['rsi'] < 35:
+                st.warning("🟡 LEKKIE WYPRZEDANIE")
+            else:
+                st.info("🟤 OBSERWACJA")
         
-        if stock['volume_ratio'] > 1.5:
-            st.info("🔥 Wysoki wolumen")
+        with col2:
+            st.subheader("EMA")
+            if stock['price'] > stock['ema_200']:
+                st.success("📈 Trend WZROSTOWY")
+            else:
+                st.warning("📉 Trend SPADKOWY")
+            
+            if stock['price'] > stock['ema_50'] > stock['ema_200']:
+                st.success("🚀 EMA: Bycza formacja")
+            elif stock['price'] < stock['ema_50'] < stock['ema_200']:
+                st.warning("🐻 EMA: Niedźwiedzia formacja")
         
-        # Dodatkowe sygnały z MACD i BB
-        latest = stock['data'].iloc[-1]
-        if latest['macd'] > latest['macd_signal'] and latest['macd_hist'] > 0:
-            st.success("📈 MACD: Byczy crossover")
-        elif latest['macd'] < latest['macd_signal'] and latest['macd_hist'] < 0:
-            st.warning("📉 MACD: Niedźwiedzi crossover")
-        
-        if stock['price'] < latest['bb_lower']:
-            st.success("🟢 BB: Poniżej dolnej bandy - wyprzedane")
-        elif stock['price'] > latest['bb_upper']:
-            st.warning("🔴 BB: Powyżej górnej bandy - przekupione")
+        with col3:
+            st.subheader("MACD")
+            latest = stock['data'].iloc[-1]
+            if latest['macd'] > latest['macd_signal'] and latest['macd_hist'] > 0:
+                st.success("📈 Byczy crossover")
+            elif latest['macd'] < latest['macd_signal'] and latest['macd_hist'] < 0:
+                st.warning("📉 Niedźwiedzi crossover")
+            else:
+                st.info("⏸️ Neutralny")
     
-    with st.expander("📊 Dane"):
+    # Dane techniczne
+    with st.expander("📊 Dane techniczne", expanded=False):
         df_recent = stock['data'].tail(60)
         resistance = df_recent['High'].quantile(0.8)
         support = df_recent['Low'].quantile(0.2)
         
-        st.write(f"🔴 Opór: ${resistance:.2f}")
-        st.write(f"🟢 Wsparcie: ${support:.2f}")
-        upside = ((resistance / stock['price']) - 1) * 100
-        st.write(f"📈 Potencjał: {upside:.1f}%")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🔴 Opór", f"${resistance:.2f}")
+        with col2:
+            st.metric("🟢 Wsparcie", f"${support:.2f}")
+        with col3:
+            upside = ((resistance / stock['price']) - 1) * 100
+            st.metric("📈 Potencjał wzrostu", f"{upside:.1f}%")
+        
         st.write(f"🏭 Sektor: {stock['sector']}")
+        st.write(f"📊 Ostatnia aktualizacja: {df_recent.index[-1].strftime('%Y-%m-%d')}")
 
 else:
-    st.info("🚀 Kliknij 'Skanuj' w panelu bocznym")
+    st.info("🚀 Kliknij 'Skanuj' w panelu bocznym, aby rozpocząć")
     
-    with st.expander("📚 Instrukcja", expanded=False):
+    with st.expander("📚 Jak używać", expanded=True):
         st.markdown("""
-        - **💎 <25**: Ekstremalne
-        - **💍 <30**: Silne  
-        - **🟡 <35**: Lekkie
-        - **🟤 <40**: Obserwacja
+        **🔍 Jak szukać diamentów:**
+        1. Ustaw maksymalny RSI (np. 35 dla agresywnych, 40 dla konserwatywnych)
+        2. Wybierz zakres kapitalizacji (np. 10-100 mld dla średnich spółek)
+        3. Wybierz sektor lub zostaw "Wszystkie"
+        4. Kliknij "Skanuj"
+        5. Kliknij dowolną spółkę, aby zobaczyć szczegółową analizę
         
-        Interpretuj RSI <30 jako okazję, sprawdź EMA200 i wolumen.
+        **💎 Interpretacja RSI:**
+        - **<25**: Ekstremalne wyprzedanie - agresywne kupno
+        - **25-30**: Silne wyprzedanie - kupno
+        - **30-35**: Lekkie wyprzedanie - obserwacja
+        - **35-40**: Neutralne - ostrożność
         """)
-    
-    st.warning("⚠️ Edukacyjne. Nie porada inwestycyjna.")
 
-# Footer - kompaktowy
-st.markdown(f"<div style='text-align: center; color: #64748b; font-size: 12px;'>💎 Scanner | {datetime.now().strftime('%Y-%m-%d %H:%M')}</div>", unsafe_allow_html=True)
+# Footer
+st.markdown(f"<div style='text-align: center; color: #64748b; font-size: 12px; margin-top: 20px;'>💎 NASDAQ Diamond Scanner | {datetime.now().strftime('%Y-%m-%d %H:%M')} | Dane: Yahoo Finance</div>", unsafe_allow_html=True)
